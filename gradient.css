@@ -1,0 +1,16 @@
+h1{
+    height:1cm;
+    background:linear-gradient(32deg,
+   #BFDDF0,
+   #8CC0EB,
+   #2F578A,
+   #232F72,
+   #0D0B61);
+
+}
+ul{
+    display:flex;
+    flex-direction:row;
+    flex-wrap:wrap;
+    gap: 1cm;
+}
