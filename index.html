@@ -3,9 +3,528 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Document</title>
+    <title>Syed Shahida | Software Developer</title>
+    <style>
+        :root {
+            --bg: #04131d;
+            --surface: #0b2939;
+            --surface-soft: #103d51;
+            --text: #e4fbff;
+            --accent: #33c9ff;
+            --accent-strong: #74f6ff;
+            --border: rgba(51, 201, 255, 0.24);
+            --shadow: 0 30px 80px rgba(0, 0, 0, 0.32);
+            font-family: 'Inter', system-ui, sans-serif;
+        }
+
+        body[data-theme='javios'] {
+            --bg: #050b13;
+            --surface: #0c1621;
+            --surface-soft: #102438;
+            --text: #eef2ff;
+            --accent: #f6a11d;
+            --accent-strong: #ffb347;
+            --border: rgba(246, 161, 29, 0.22);
+            --shadow: 0 30px 70px rgba(0, 0, 0, 0.25);
+            background: radial-gradient(circle at top, rgba(246, 161, 29, 0.18), transparent 40%),
+                        linear-gradient(180deg, #08101d 0%, #050b13 100%);
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            min-height: 100vh;
+            background: radial-gradient(circle at top left, rgba(51, 201, 255, 0.16), transparent 30%),
+                        radial-gradient(circle at bottom right, rgba(44, 210, 255, 0.1), transparent 35%),
+                        linear-gradient(180deg, #04131d 0%, #021018 100%);
+            color: var(--text);
+            line-height: 1.75;
+        }
+
+        body::before {
+            content: '';
+            position: fixed;
+            inset: 0;
+            background: url('data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="100" height="100" viewBox="0 0 100 100"%3E%3Ccircle cx="50" cy="50" r="1.5" fill="rgba(51,201,255,0.08)"/%3E%3C/svg%3E') repeat;
+            opacity: 0.35;
+            pointer-events: none;
+        }
+
+        .container {
+            width: min(1140px, calc(100% - 2rem));
+            margin: 0 auto;
+            padding: 2.5rem 0 4rem;
+        }
+
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 1rem;
+            padding-bottom: 2rem;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .brand {
+            display: flex;
+            flex-direction: column;
+            gap: 0.35rem;
+        }
+
+        .brand span {
+            color: var(--accent);
+            font-size: 0.95rem;
+            letter-spacing: 0.25em;
+            text-transform: uppercase;
+        }
+
+        .brand h1 {
+            font-size: clamp(2rem, 2.5vw, 3rem);
+            letter-spacing: -0.04em;
+        }
+
+        .nav-links {
+            display: flex;
+            align-items: center;
+            gap: 1.25rem;
+            flex-wrap: wrap;
+        }
+
+        .nav-links a {
+            color: var(--text);
+            text-decoration: none;
+            transition: color 0.2s ease;
+        }
+
+        .nav-links a:hover {
+            color: var(--accent-strong);
+        }
+
+        .hero {
+            display: grid;
+            grid-template-columns: 1.4fr 1fr;
+            gap: 2rem;
+            align-items: center;
+            padding: 4rem 0 3rem;
+        }
+
+        .hero-copy {
+            max-width: 620px;
+        }
+
+        .hero-copy h2 {
+            font-size: clamp(2.1rem, 3.2vw, 3.4rem);
+            margin-bottom: 1rem;
+            line-height: 1.05;
+        }
+
+        .hero-copy p {
+            margin-bottom: 1.75rem;
+            color: #c8d5df;
+        }
+
+        .hero-buttons {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 1rem;
+        }
+
+        .button, .button-outline {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            padding: 0.95rem 1.7rem;
+            border-radius: 999px;
+            border: 1px solid transparent;
+            font-weight: 600;
+            text-decoration: none;
+            cursor: pointer;
+            transition: transform 0.2s ease, background 0.2s ease, border-color 0.2s ease, color 0.2s ease;
+        }
+
+        .button {
+            background: linear-gradient(135deg, var(--accent), var(--accent-strong));
+            color: #04131d;
+        }
+
+        .button-outline {
+            border-color: rgba(58, 217, 255, 0.25);
+            color: var(--text);
+            background: rgba(58, 217, 255, 0.08);
+        }
+
+        .button:hover, .button-outline:hover {
+            transform: translateY(-2px);
+        }
+
+        .hero-photo {
+            position: relative;
+            padding: 2rem;
+            border-radius: 40px;
+            background: linear-gradient(180deg, rgba(58, 217, 255, 0.12), rgba(0, 0, 0, 0.0));
+            box-shadow: var(--shadow);
+            border: 1px solid rgba(58, 217, 255, 0.12);
+        }
+
+        .hero-photo::after {
+            content: '';
+            position: absolute;
+            inset: 0;
+            border-radius: inherit;
+            background: linear-gradient(135deg, rgba(58, 217, 255, 0.16), transparent 55%);
+            pointer-events: none;
+        }
+
+        .profile-card {
+            position: relative;
+            border-radius: 38px;
+            overflow: hidden;
+            background: rgba(8, 20, 30, 0.96);
+            border: 1px solid rgba(58, 217, 255, 0.14);
+            box-shadow: 0 40px 90px rgba(0,0,0,0.28);
+        }
+
+        .profile-card img {
+            width: 100%;
+            display: block;
+            object-fit: cover;
+            aspect-ratio: 4/3;
+        }
+
+        .profile-card .card-content {
+            padding: 1.7rem;
+        }
+
+        .profile-card .role {
+            color: var(--accent);
+            font-weight: 700;
+            letter-spacing: 0.12em;
+            text-transform: uppercase;
+            margin-bottom: 0.75rem;
+        }
+
+        .profile-card h3 {
+            margin-bottom: 0.75rem;
+            font-size: 1.4rem;
+        }
+
+        .profile-card p {
+            color: #a9bac7;
+            margin-bottom: 0.85rem;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+            gap: 0.9rem;
+            margin-top: 1.5rem;
+        }
+
+        .stat {
+            background: rgba(255,255,255,0.04);
+            border: 1px solid rgba(255,255,255,0.08);
+            padding: 1rem;
+            border-radius: 20px;
+            text-align: center;
+        }
+
+        .stat strong {
+            display: block;
+            font-size: 1.2rem;
+            margin-bottom: 0.35rem;
+        }
+
+        .section {
+            margin-top: 3rem;
+            padding: 3rem 0;
+            border-top: 1px solid var(--border);
+        }
+
+        .section h2 {
+            margin-bottom: 1rem;
+            font-size: 1.95rem;
+        }
+
+        .section p.description {
+            max-width: 720px;
+            color: #b8c8d1;
+            margin-bottom: 2rem;
+        }
+
+        .cards {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 1.4rem;
+        }
+
+        .card {
+            background: var(--surface);
+            border: 1px solid rgba(51,201,255,0.18);
+            border-radius: 36px;
+            padding: 1.6rem;
+            box-shadow: inset 0 0 0 1px rgba(51,201,255,0.06);
+        }
+
+        .card h3 {
+            font-size: 1.2rem;
+            margin-bottom: 0.75rem;
+        }
+
+        .card p {
+            color: #c2d1dc;
+        }
+
+        .skills {
+            display: grid;
+            gap: 1rem;
+        }
+
+        .skill-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 1rem;
+            padding: 1rem 1rem;
+            background: rgba(255,255,255,0.03);
+            border: 1px solid rgba(255,255,255,0.06);
+            border-radius: 18px;
+        }
+
+        .skill-item span {
+            font-weight: 600;
+        }
+
+        .skill-meter {
+            width: 45%;
+            height: 10px;
+            border-radius: 999px;
+            background: rgba(255,255,255,0.08);
+            overflow: hidden;
+        }
+
+        .skill-meter span {
+            display: block;
+            height: 100%;
+            border-radius: inherit;
+            background: linear-gradient(90deg, var(--accent), var(--accent-strong));
+        }
+
+        footer {
+            padding-top: 2rem;
+            border-top: 1px solid var(--border);
+            color: #7f95a4;
+            font-size: 0.95rem;
+            text-align: center;
+        }
+
+        @media (max-width: 900px) {
+            .hero {
+                grid-template-columns: 1fr;
+            }
+            .cards {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
 </head>
 <body>
-    <h>hllo shahida</h>
+    <div class="container">
+        <header>
+            <div class="brand">
+                <span>Software Developer</span>
+                <h1>Syed Shahida</h1>
+            </div>
+            <nav class="nav-links">
+                <a href="#about">About</a>
+                <a href="#skills">Skills</a>
+                <a href="#projects">Projects</a>
+                <a href="#contact">Contact</a>
+            </nav>
+            <button id="theme-toggle" class="button-outline" type="button">Javios Theme</button>
+        </header>
+
+        <section class="hero">
+            <div class="hero-copy">
+                <h2>Hi, I'm Shahida — B.Tech in Data Science and a full-stack software developer building intelligent web applications.</h2>
+                <p>Driven by user-focused products, scalable code, and clean UI. I specialize in modern web and mobile-first solutions that solve business challenges with clarity.</p>
+                <div class="hero-buttons">
+                    <a class="button" href="#contact">Hire Me</a>
+                    <a class="button-outline" href="#projects">View Work</a>
+                </div>
+            </div>
+
+            <div class="hero-photo">
+                <div class="profile-card">
+                    <img src="https://images.unsplash.com/photo-1524504388940-b1c1722653e1?auto=format&fit=crop&w=900&q=80" alt="Profile photo">
+                    <div class="card-content">
+                        <p class="role">Full-Stack Developer</p>
+                        <h3>Syed Shahida</h3>
+                        <p>B.Tech - Data Science from Mother Theresa Institution of Engineering and Technology. Passionate about building products that combine data, design, and automation.</p>
+                        <div class="stats-grid">
+                            <div class="stat">
+                                <strong>5+</strong>
+                                Years Experience
+                            </div>
+                            <div class="stat">
+                                <strong>12</strong>
+                                Projects Delivered
+                            </div>
+                            <div class="stat">
+                                <strong>98%</strong>
+                                Client Satisfaction
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section id="about" class="section">
+            <h2>About Me</h2>
+            <p class="description">I am a professional software developer with a strong foundation in data science and web engineering. I create responsive applications, build analytics pipelines, and bring complex ideas to life with clean, maintainable code.</p>
+            <div class="cards">
+                <div class="card">
+                    <h3>Education</h3>
+                    <p>B.Tech in Data Science, Mother Theresa Institution of Engineering and Technology</p>
+                </div>
+                <div class="card">
+                    <h3>Approach</h3>
+                    <p>I focus on collaboration, rapid prototyping, and polished user experiences backed by data-driven decision making.</p>
+                </div>
+                <div class="card">
+                    <h3>Tools</h3>
+                    <p>JavaScript, React, Node.js, Python, SQL, Git, REST APIs, Bootstrap, Tailwind, Figma</p>
+                </div>
+                <div class="card">
+                    <h3>Values</h3>
+                    <p>Quality, reliability, communication, and thoughtful architecture are at the heart of every solution I deliver.</p>
+                </div>
+            </div>
+        </section>
+
+        <section id="skills" class="section">
+            <h2>Skills</h2>
+            <p class="description">Core competencies that enable me to build strong products for modern teams.</p>
+            <div class="skills">
+                <div class="skill-item">
+                    <span>JavaScript / TypeScript</span>
+                    <div class="skill-meter"><span style="width: 92%;"></span></div>
+                </div>
+                <div class="skill-item">
+                    <span>React / Next.js</span>
+                    <div class="skill-meter"><span style="width: 88%;"></span></div>
+                </div>
+                <div class="skill-item">
+                    <span>Node.js / Express</span>
+                    <div class="skill-meter"><span style="width: 85%;"></span></div>
+                </div>
+                <div class="skill-item">
+                    <span>Data Analysis & Machine Learning</span>
+                    <div class="skill-meter"><span style="width: 80%;"></span></div>
+                </div>
+                <div class="skill-item">
+                    <span>UI / UX Design</span>
+                    <div class="skill-meter"><span style="width: 82%;"></span></div>
+                </div>
+                <div class="skill-item">
+                    <span>SQL / Data Engineering</span>
+                    <div class="skill-meter"><span style="width: 78%;"></span></div>
+                </div>
+            </div>
+        </section>
+
+        <section id="projects" class="section">
+            <h2>Projects</h2>
+            <p class="description">Selected work that demonstrates product thinking, technical depth, and practical design.</p>
+            <div class="cards">
+                <div class="card">
+                    <h3>Analytics Dashboard</h3>
+                    <p>Built an interactive dashboard for tracking user behavior and performance metrics using React, D3, and Python backend APIs.</p>
+                </div>
+                <div class="card">
+                    <h3>Smart Inventory System</h3>
+                    <p>Delivered a full-stack inventory management app with real-time updates, search filters, role-based access, and export features.</p>
+                </div>
+                <div class="card">
+                    <h3>Data Science Pipeline</h3>
+                    <p>Developed an end-to-end data workflow for ETL, modeling, and visualization to support business insights and forecasting.</p>
+                </div>
+                <div class="card">
+                    <h3>Portfolio Website</h3>
+                    <p>Designed and implemented this portfolio page using HTML, CSS, and JavaScript, focusing on clarity and modern styling.</p>
+                </div>
+            </div>
+        </section>
+
+        <section id="contact" class="section">
+            <h2>Contact</h2>
+            <p class="description">Let's work together. I'm available for freelance and full-time roles in software development, data engineering, and product delivery.</p>
+            <div class="cards">
+                <div class="card">
+                    <h3>Phone</h3>
+                    <p>8639030235</p>
+                </div>
+                <div class="card">
+                    <h3>Email</h3>
+                    <p><a href="mailto:habeebshahida330@gmail.com" style="color: var(--accent); text-decoration: none;">habeebshahida330@gmail.com</a></p>
+                </div>
+                <div class="card">
+                    <h3>Location</h3>
+                    <p>Mother Theresa Institution of Engineering and Technology alumni with a focus on India-based development work.</p>
+                </div>
+                <div class="card">
+                    <h3>Availability</h3>
+                    <p>Open to new opportunities in software development, product engineering, and data-driven applications.</p>
+                </div>
+            </div>
+        </section>
+
+        <footer>
+            <p>&copy; <span id="year"></span> Syed Shahida. Crafted with HTML, CSS, and JavaScript.</p>
+        </footer>
+    </div>
+
+    <script>
+        const yearSpan = document.getElementById('year');
+        const themeToggle = document.getElementById('theme-toggle');
+        const body = document.body;
+
+        yearSpan.textContent = new Date().getFullYear();
+
+        const savedTheme = localStorage.getItem('theme');
+        if (savedTheme === 'javios') {
+            body.dataset.theme = 'javios';
+            themeToggle.textContent = 'Default Theme';
+        }
+
+        const links = document.querySelectorAll('.nav-links a');
+        links.forEach(link => {
+            link.addEventListener('click', event => {
+                event.preventDefault();
+                const target = document.querySelector(link.getAttribute('href'));
+                if (target) {
+                    window.scrollTo({ top: target.offsetTop - 60, behavior: 'smooth' });
+                }
+            });
+        });
+
+        themeToggle.addEventListener('click', () => {
+            const isJavios = body.dataset.theme === 'javios';
+            if (isJavios) {
+                body.removeAttribute('data-theme');
+                localStorage.removeItem('theme');
+                themeToggle.textContent = 'Javios Theme';
+            } else {
+                body.dataset.theme = 'javios';
+                localStorage.setItem('theme', 'javios');
+                themeToggle.textContent = 'Default Theme';
+            }
+        });
+    </script>
 </body>
 </html>
