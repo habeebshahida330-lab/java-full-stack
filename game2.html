@@ -1,0 +1,484 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Rhythm Dungeon</title>
+
+    <!-- CSS -->
+    <style>
+        body {
+            margin: 0;
+            padding: 16px;
+            background-color: #020205;
+            color: #d9f8ff;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+        }
+
+        h1 {
+            margin: 0;
+            font-size: 38px;
+            text-shadow: 0 0 20px rgba(63, 255, 255, 0.7);
+        }
+
+        .stats {
+            width: 740px;
+            display: flex;
+            justify-content: space-between;
+            margin: 16px 0 10px;
+            font-size: 18px;
+        }
+
+        #melodyBar {
+            width: 740px;
+            display: flex;
+            justify-content: center;
+            gap: 8px;
+            margin-bottom: 16px;
+        }
+
+        .noteBlock {
+            width: 46px;
+            height: 26px;
+            border-radius: 8px;
+            border: 1px solid rgba(255,255,255,0.3);
+            box-shadow: 0 0 18px rgba(255, 255, 255, 0.22);
+        }
+
+        #gameCanvas {
+            border: 2px solid rgba(63, 255, 255, 0.45);
+            border-radius: 14px;
+            background: radial-gradient(circle at 50% 18%, rgba(63, 255, 255, 0.06), transparent 28%),
+                        linear-gradient(160deg, #05080e 0%, #020205 100%);
+            box-shadow: 0 0 32px rgba(0, 255, 255, 0.12);
+        }
+
+        .instructions {
+            margin-top: 14px;
+            font-size: 14px;
+            color: #bfefff;
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+    <!-- HTML -->
+    <h1>Rhythm Dungeon</h1>
+    <div class="stats">
+        <span id="score">Score: 0</span>
+        <span id="lives">Lives: 3</span>
+        <span id="level">Level: 1</span>
+    </div>
+    <div id="melodyBar"></div>
+    <canvas id="gameCanvas" width="740" height="560"></canvas>
+    <p class="instructions">Use arrow keys to move. Collect gems in the correct melodic order while avoiding patrolling enemies.</p>
+
+    <!-- JavaScript -->
+    <script>
+        // JS
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+        const scoreLabel = document.getElementById('score');
+        const livesLabel = document.getElementById('lives');
+        const levelLabel = document.getElementById('level');
+        const melodyBar = document.getElementById('melodyBar');
+
+        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+
+        const noteFreqs = [261.63, 293.66, 329.63, 349.23, 392.00, 440.00, 493.88];
+        const noteColors = ['#3DF5FF', '#7CFF6A', '#FFD75A', '#FF84FF', '#8C95FF', '#FF5D72', '#4AF7FF'];
+        const tileColors = ['#081117', '#0b1723', '#0f2030', '#10273a', '#143247'];
+
+        const cols = 11;
+        const rows = 8;
+        const tileSize = 64;
+        const offsetX = 48;
+        const offsetY = 48;
+
+        let score = 0;
+        let lives = 3;
+        let level = 1;
+        let tempo = 1.0;
+        let gameOver = false;
+
+        const dungeon = [];
+        const gems = [];
+        const enemies = [];
+        let sequence = [];
+        let sequenceIndex = 0;
+
+        const player = {
+            tileX: 5,
+            tileY: rows - 2,
+            x: 0,
+            y: 0,
+            targetX: 0,
+            targetY: 0,
+            size: 24,
+            moving: false,
+            speed: 0.18,
+        };
+
+        function playSound(freq, type = 'sine', duration = 0.16, volume = 0.12) {
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.type = type;
+            osc.frequency.value = freq;
+            osc.connect(gain);
+            gain.connect(audioCtx.destination);
+            const now = audioCtx.currentTime;
+            gain.gain.setValueAtTime(0.0001, now);
+            gain.gain.exponentialRampToValueAtTime(volume, now + 0.02);
+            gain.gain.exponentialRampToValueAtTime(0.0001, now + duration);
+            osc.start(now);
+            osc.stop(now + duration + 0.02);
+        }
+
+        function playFootstep(freq) {
+            playSound(freq * 0.9, 'triangle', 0.08, 0.08);
+        }
+
+        function playGem(freq) {
+            playSound(freq * 1.5, 'triangle', 0.16, 0.16);
+            playSound(freq * 2.1, 'sine', 0.1, 0.08);
+        }
+
+        function playEnemyHum() {
+            if (gameOver) return;
+            playSound(110, 'sine', 0.16, 0.05);
+        }
+
+        function playWall() {
+            playSound(80, 'square', 0.12, 0.14);
+        }
+
+        function playLevelUp() {
+            const now = audioCtx.currentTime;
+            [330, 392, 440, 523].forEach((freq, i) => {
+                const osc = audioCtx.createOscillator();
+                const gain = audioCtx.createGain();
+                osc.type = 'sine';
+                osc.frequency.value = freq;
+                osc.connect(gain);
+                gain.connect(audioCtx.destination);
+                gain.gain.setValueAtTime(0.0001, now + i * 0.08);
+                gain.gain.exponentialRampToValueAtTime(0.16, now + i * 0.08 + 0.02);
+                gain.gain.exponentialRampToValueAtTime(0.0001, now + i * 0.08 + 0.18);
+                osc.start(now + i * 0.08);
+                osc.stop(now + i * 0.08 + 0.24);
+            });
+        }
+
+        function clamp(value, min, max) {
+            return Math.max(min, Math.min(max, value));
+        }
+
+        function initDungeon() {
+            for (let y = 0; y < rows; y++) {
+                const row = [];
+                for (let x = 0; x < cols; x++) {
+                    const outer = x === 0 || x === cols - 1 || y === 0 || y === rows - 1;
+                    const note = (x + y * 2) % noteFreqs.length;
+                    row.push({ wall: outer, note });
+                }
+                dungeon.push(row);
+            }
+        }
+
+        function buildSequence() {
+            sequence = [];
+            const length = 3 + level;
+            for (let i = 0; i < length; i++) {
+                sequence.push((i + level - 1) % noteFreqs.length);
+            }
+            sequenceIndex = 0;
+        }
+
+        function placeGems() {
+            gems.length = 0;
+            const used = new Set();
+            sequence.forEach(note => {
+                let placed = false;
+                for (let attempt = 0; attempt < 120 && !placed; attempt++) {
+                    const x = 1 + Math.floor(Math.random() * (cols - 2));
+                    const y = 1 + Math.floor(Math.random() * (rows - 2));
+                    const key = `${x}:${y}`;
+                    if (used.has(key)) continue;
+                    if (dungeon[y][x].note !== note) continue;
+                    if (x === player.tileX && y === player.tileY) continue;
+                    used.add(key);
+                    gems.push({ x, y, note, collected: false });
+                    placed = true;
+                }
+            });
+        }
+
+        function spawnEnemy() {
+            const x = 1 + Math.floor(Math.random() * (cols - 2));
+            enemies.push({ x, y: 0, speed: 0.04 + level * 0.02, offset: Math.random() * 2 });
+        }
+
+        function updateUI() {
+            scoreLabel.textContent = `Score: ${score}`;
+            livesLabel.textContent = `Lives: ${lives}`;
+            levelLabel.textContent = `Level: ${level}`;
+            melodyBar.innerHTML = '';
+            sequence.forEach((note, index) => {
+                const block = document.createElement('div');
+                block.className = 'noteBlock';
+                block.style.background = noteColors[note];
+                block.style.opacity = index === sequenceIndex ? '1' : '0.55';
+                melodyBar.appendChild(block);
+            });
+        }
+
+        function startLevel() {
+            tempo = 1 + level * 0.12;
+            buildSequence();
+            placeGems();
+            enemies.length = 0;
+            player.tileX = 5;
+            player.tileY = rows - 2;
+            player.x = player.tileX * tileSize + offsetX + tileSize / 2;
+            player.y = player.tileY * tileSize + offsetY + tileSize / 2;
+            player.targetX = player.x;
+            player.targetY = player.y;
+            player.moving = false;
+            updateUI();
+        }
+
+        function handleTileSound() {
+            const note = dungeon[player.tileY][player.tileX].note;
+            playFootstep(noteFreqs[note]);
+        }
+
+        function hitWall() {
+            playWall();
+        }
+
+        function collectGem(gem) {
+            if (gem.note === sequence[sequenceIndex]) {
+                gem.collected = true;
+                playGem(noteFreqs[gem.note]);
+                sequenceIndex += 1;
+                score += 10;
+                if (sequenceIndex >= sequence.length) {
+                    score += 20;
+                    level += 1;
+                    playLevelUp();
+                    startLevel();
+                    return;
+                }
+            } else {
+                lives -= 1;
+                playSound(120, 'square', 0.18, 0.16);
+                if (lives <= 0) {
+                    gameOver = true;
+                }
+            }
+            updateUI();
+        }
+
+        function movePlayer(dx, dy) {
+            if (gameOver || player.moving) return;
+            const targetX = player.tileX + dx;
+            const targetY = player.tileY + dy;
+            if (targetX < 1 || targetX >= cols - 1 || targetY < 1 || targetY >= rows - 1) {
+                hitWall();
+                return;
+            }
+            if (dungeon[targetY][targetX].wall) {
+                hitWall();
+                return;
+            }
+            player.tileX = targetX;
+            player.tileY = targetY;
+            player.targetX = player.tileX * tileSize + offsetX + tileSize / 2;
+            player.targetY = player.tileY * tileSize + offsetY + tileSize / 2;
+            player.moving = true;
+            handleTileSound();
+        }
+
+        document.addEventListener('keydown', function(event) {
+            if (audioCtx.state === 'suspended') {
+                audioCtx.resume();
+            }
+            if (gameOver) return;
+            if (event.code === 'ArrowLeft') movePlayer(-1, 0);
+            if (event.code === 'ArrowRight') movePlayer(1, 0);
+            if (event.code === 'ArrowUp') movePlayer(0, -1);
+            if (event.code === 'ArrowDown') movePlayer(0, 1);
+        });
+
+        function updatePlayerPosition() {
+            if (!player.moving) return;
+            const dx = player.targetX - player.x;
+            const dy = player.targetY - player.y;
+            player.x += dx * player.speed;
+            player.y += dy * player.speed;
+            if (Math.abs(dx) < 0.5 && Math.abs(dy) < 0.5) {
+                player.x = player.targetX;
+                player.y = player.targetY;
+                player.moving = false;
+                gems.forEach(gem => {
+                    if (!gem.collected && gem.x === player.tileX && gem.y === player.tileY) {
+                        collectGem(gem);
+                    }
+                });
+            }
+        }
+
+        function updateEnemies() {
+            if (gameOver) return;
+            enemies.forEach(enemy => {
+                enemy.y += enemy.speed * tempo;
+                enemy.x += Math.sin(enemy.y * 0.2 + enemy.offset) * 0.02;
+            });
+            enemies.forEach((enemy, idx) => {
+                if (enemy.y > rows - 2) {
+                    enemies.splice(idx, 1);
+                }
+            });
+            enemies.forEach(enemy => {
+                const ex = Math.round(enemy.x);
+                if (ex === player.tileX && Math.round(enemy.y) === player.tileY) {
+                    gameOver = true;
+                }
+            });
+        }
+
+        function spawnEnemyInterval() {
+            if (gameOver) return;
+            if (enemies.length < level + 2) {
+                spawnEnemy();
+            }
+        }
+
+        function drawDungeon() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            ctx.fillStyle = '#020205';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            ctx.shadowBlur = 0;
+
+            for (let y = 0; y < rows; y++) {
+                for (let x = 0; x < cols; x++) {
+                    const cell = dungeon[y][x];
+                    const px = offsetX + x * tileSize;
+                    const py = offsetY + y * tileSize;
+                    const size = tileSize - 6;
+                    if (cell.wall) {
+                        ctx.fillStyle = '#111820';
+                        ctx.fillRect(px, py, size, size);
+                        ctx.strokeStyle = 'rgba(255,255,255,0.08)';
+                        ctx.strokeRect(px, py, size, size);
+                    } else {
+                        const color = noteColors[cell.note];
+                        ctx.fillStyle = color;
+                        ctx.shadowBlur = 18;
+                        ctx.shadowColor = color;
+                        ctx.fillRect(px, py, size, size);
+                        ctx.shadowBlur = 0;
+                        ctx.strokeStyle = 'rgba(255,255,255,0.12)';
+                        ctx.strokeRect(px, py, size, size);
+                    }
+                }
+            }
+        }
+
+        function drawGems() {
+            gems.forEach(gem => {
+                if (gem.collected) return;
+                const px = offsetX + gem.x * tileSize + tileSize / 2;
+                const py = offsetY + gem.y * tileSize + tileSize / 2;
+                const color = noteColors[gem.note];
+                ctx.shadowBlur = 18;
+                ctx.shadowColor = color;
+                ctx.fillStyle = color;
+                ctx.beginPath();
+                ctx.arc(px, py - 4, 10, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.shadowBlur = 0;
+            });
+        }
+
+        function drawEnemies() {
+            enemies.forEach(enemy => {
+                const px = offsetX + Math.round(enemy.x) * tileSize + tileSize / 2;
+                const py = offsetY + Math.round(enemy.y) * tileSize + tileSize / 2;
+                ctx.shadowBlur = 14;
+                ctx.shadowColor = '#ff3d5d';
+                ctx.fillStyle = '#ff3d5d';
+                ctx.fillRect(px - 18, py - 10, 36, 20);
+                ctx.fillStyle = '#ffdfe4';
+                ctx.fillRect(px - 8, py - 6, 16, 12);
+                ctx.shadowBlur = 0;
+            });
+        }
+
+        function drawPlayer() {
+            ctx.shadowBlur = 24;
+            ctx.shadowColor = '#3df5ff';
+            ctx.fillStyle = '#3df5ff';
+            ctx.beginPath();
+            ctx.moveTo(player.x, player.y - 18);
+            ctx.lineTo(player.x - 18, player.y + 16);
+            ctx.lineTo(player.x + 18, player.y + 16);
+            ctx.closePath();
+            ctx.fill();
+            ctx.shadowBlur = 0;
+        }
+
+        function drawGridGlow() {
+            ctx.strokeStyle = 'rgba(63,255,255,0.06)';
+            for (let y = 0; y <= rows; y++) {
+                const py = offsetY + y * tileSize - 3;
+                ctx.beginPath();
+                ctx.moveTo(offsetX - 3, py);
+                ctx.lineTo(offsetX + cols * tileSize - 3, py);
+                ctx.stroke();
+            }
+            for (let x = 0; x <= cols; x++) {
+                const px = offsetX + x * tileSize - 3;
+                ctx.beginPath();
+                ctx.moveTo(px, offsetY - 3);
+                ctx.lineTo(px, offsetY + rows * tileSize - 3);
+                ctx.stroke();
+            }
+        }
+
+        function drawOverlay() {
+            if (!gameOver) return;
+            ctx.fillStyle = 'rgba(0, 0, 0, 0.65)';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            ctx.fillStyle = '#ff5d72';
+            ctx.font = 'bold 52px Arial';
+            ctx.textAlign = 'center';
+            ctx.fillText('GAME OVER', canvas.width / 2, canvas.height / 2 - 10);
+            ctx.font = '18px Arial';
+            ctx.fillText('Reload the page to play again', canvas.width / 2, canvas.height / 2 + 30);
+        }
+
+        function gameLoop() {
+            updatePlayerPosition();
+            drawDungeon();
+            drawGems();
+            drawEnemies();
+            drawPlayer();
+            drawGridGlow();
+            drawOverlay();
+            requestAnimationFrame(gameLoop);
+        }
+
+        initDungeon();
+        startLevel();
+        requestAnimationFrame(gameLoop);
+        setInterval(spawnEnemyInterval, 1200);
+        setInterval(updateEnemies, 50);
+        setInterval(playEnemyHum, 700);
+    </script>
+</body>
+</html>
